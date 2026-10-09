@@ -10,6 +10,15 @@ spec:
     metadata:
       labels: {app: taskboard-backend}
     spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml . | indent 8 }}
+      {{- end }}
+      initContainers:
+        # Same idea as the compose healthcheck: do not run migrations before Postgres accepts connections.
+        - name: wait-for-postgres
+          image: postgres:16-alpine
+          command: ["sh", "-c", "until pg_isready -h {{ .Values.postgres.host }} -p 5432; do echo waiting for postgres; sleep 2; done"]
       containers:
         - name: backend
           image: "{{ .Values.backend.image }}:{{ .Values.backend.tag }}"
